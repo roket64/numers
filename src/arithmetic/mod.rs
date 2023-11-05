@@ -1,17 +1,24 @@
 use std::num::IntErrorKind;
 
 pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
-    fn modulo(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
+    fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
     fn modular_mul(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
     fn modular_pow(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
 }
 
-pub fn modulo<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    x.modulo(&y, &modulo)
+/// Calculate least positive integer k that holds `x = (y * k) + modulo.`
+/// # Example
+/// ```
+/// assert_eq!(modulo(9, 3).uwnrp(), 0);
+/// assert_eq!(modulo(-9, 4).unwrap(), 3);
+/// assert_eq!(modulo(-9, -4).unwrap(), 3);
+/// ```
+pub fn modulo<T: Int>(x: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
+    x.modulo(&modulo)
 }
 
 /// Calculates least positive integer from modular multiplication between Int types
-/// and returns `Result` wether the computation was successful.
+/// and returns `Result<T, Box<IntErrorKind>>` wether the computation was successful.
 /// # Examples
 /// ```
 /// let n: i32 = 5;
@@ -24,7 +31,7 @@ pub fn modular_mul<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>
 }
 
 /// Calculates least positive ineger from modular exponentiation between Int types
-/// and returns Result wether the compute was successful.
+/// and returns `Result<T, Box<IntErrorKind>>` wether the compute was successful.
 /// # Examples
 /// ```
 /// let n: i32 = 2;
@@ -36,10 +43,10 @@ pub fn modular_pow<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>
     x.modular_pow(&y, &modulo)
 }
 
-macro_rules! impl_modular_isize {
+macro_rules! impl_arithmetic_isize {
     ($($t: ty; $test_mod: ident), +) => {$(
         impl Int for $t {
-            fn modulo(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
             }
 
@@ -213,10 +220,10 @@ macro_rules! impl_modular_isize {
     )+};
 }
 
-macro_rules! impl_modular_usize {
+macro_rules! impl_arithmetic_usize {
     ($($t: ty; $test_mod: ident), +) => {$(
         impl Int for $t {
-            fn modulo(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
             }
 
@@ -343,5 +350,5 @@ macro_rules! impl_modular_usize {
     )+};
 }
 
-impl_modular_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
-impl_modular_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
+impl_arithmetic_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
+impl_arithmetic_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
