@@ -8,9 +8,12 @@ edition = "2021"
 [lib]
 name = "numerslib"
 path = "src/lib.rs"
+doctest = false
+
 
 [[bin]]
 name = "main"
 path = "src/main.rs"
 
 [dependencies]
+num = "0.4.1"
