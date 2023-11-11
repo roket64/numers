@@ -26,8 +26,8 @@ pub fn modulo<T: Int>(x: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
 /// let k: i32 = 7;
 /// assert_eq!(modular_mul(n, m, k).unwrap(), 1);
 /// ```
-pub fn modular_mul<T: Int>(base: T, exponent: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    base.modular_mul(&exponent, &modulo)
+pub fn modular_mul<T: Int>(multiplicand: T, multiplier: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
+    multiplicand.modular_mul(&multiplier, &modulo)
 }
 
 /// Calculates least positive ineger from modular exponentiation between Int types
