@@ -1,4 +1,5 @@
 use std::num::IntErrorKind;
+use error::ArithmeticError;
 
 pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
     fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
@@ -26,8 +27,8 @@ pub fn modulo<T: Int>(x: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
 /// let k: i32 = 7;
 /// assert_eq!(modular_mul(n, m, k).unwrap(), 1);
 /// ```
-pub fn modular_mul<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    x.modular_mul(&y, &modulo)
+pub fn modular_mul<T: Int>(base: T, exponent: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
+    base.modular_mul(&exponent, &modulo)
 }
 
 /// Calculates least positive ineger from modular exponentiation between Int types
@@ -39,8 +40,8 @@ pub fn modular_mul<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>
 /// let k: i32 = 4;
 /// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
 /// ```
-pub fn modular_pow<T: Int>(x: T, y: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    x.modular_pow(&y, &modulo)
+pub fn modular_pow<T: Int>(base: T, exponent: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
+    base.modular_pow(&exponent, &modulo)
 }
 
 macro_rules! impl_arithmetic_isize {
@@ -54,6 +55,7 @@ macro_rules! impl_arithmetic_isize {
                 // handling zero modulo
                 let mut res: $t = match *modulo {
                     0 => return Err(Box::new(IntErrorKind::Zero)),
+                    // 0 => return Err(ArithmeticErrorkind::Display),
                     _ => 0,
                 };
 
@@ -353,4 +355,4 @@ macro_rules! impl_arithmetic_usize {
 impl_arithmetic_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
 impl_arithmetic_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
 
-mod error;
+pub mod error;

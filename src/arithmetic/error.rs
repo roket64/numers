@@ -1,7 +1,8 @@
 use core::fmt::{self, Debug, Display};
-use std::{error::Error, fmt::write};
+use std::error::Error;
 
 pub enum ArithmeticErrorkind {
+    Oveflow,
     DivideByZero,
     InvalidSolution,
 }
@@ -21,6 +22,7 @@ impl Display for ArithmeticErrorkind {
 impl ArithmeticErrorkind {
     fn message(&self) -> &str {
         match self {
+            Self::Oveflow => "Overflow occurred during operation.",
             Self::DivideByZero => "Unable to divide by zero.",
             Self::InvalidSolution => "Can not find valid solution.",
         }
@@ -28,7 +30,7 @@ impl ArithmeticErrorkind {
 }
 
 pub struct ArithmeticError {
-    kind: ArithmeticErrorkind,
+    pub kind: ArithmeticErrorkind,
 }
 
 impl Debug for ArithmeticError {
