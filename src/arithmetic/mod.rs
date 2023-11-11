@@ -6,7 +6,7 @@ pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
     fn modular_pow(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
 }
 
-/// Calculate least positive integer k that holds `x = (y * k) + modulo.`
+/// Calculates least positive integer k such that `x = (y * k) + modulo.`
 /// # Example
 /// ```
 /// assert_eq!(modulo(9, 3).uwnrp(), 0);
@@ -352,3 +352,5 @@ macro_rules! impl_arithmetic_usize {
 
 impl_arithmetic_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
 impl_arithmetic_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
+
+mod error;
