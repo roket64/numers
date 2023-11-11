@@ -44,7 +44,7 @@ pub fn modular_pow<T: Int>(base: T, exponent: T, modulo: T) -> Result<T, Box<Int
 }
 
 macro_rules! impl_arithmetic_isize {
-    ($($t: ty; $test_mod: ident), +) => {$(
+    ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
             fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
@@ -92,7 +92,7 @@ macro_rules! impl_arithmetic_isize {
                         },
                     }
                     y /= 2;
-                    // use bitshift instead only if when you 
+                    // use bitshift instead only if when you
                     // have implemented the handling of negative multiplier
                     // y >>= 1;
                 }
@@ -222,7 +222,7 @@ macro_rules! impl_arithmetic_isize {
 }
 
 macro_rules! impl_arithmetic_usize {
-    ($($t: ty; $test_mod: ident), +) => {$(
+    ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
             fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
@@ -337,7 +337,7 @@ macro_rules! impl_arithmetic_usize {
 
                     // 9 mod 4
                     assert_eq!(_powmod(3, 2, 4).unwrap(), 1);
-                    
+
                     // 2147483648
                     assert_eq!(_powmod(2, 32, 1usize << 32).unwrap(), 0);
                     // 1628413597910449 mod 37
@@ -351,5 +351,10 @@ macro_rules! impl_arithmetic_usize {
     )+};
 }
 
-impl_arithmetic_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
-impl_arithmetic_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
+impl_arithmetic_isize!(isize, test_isize; 
+                       i32, test_i32;
+                       i64, test_i64);
+
+impl_arithmetic_usize!(usize, test_usize;
+                       u32, test_u32;
+                       u64, test_u64);
