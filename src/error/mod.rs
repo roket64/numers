@@ -38,50 +38,32 @@ macro_rules! impl_errorkind {
     )+};
 }
 
-macro_rules! impl_errorname {
-    ($($err_name: ident), +) => {$(
-        impl Error for $err_name {
-            fn cause(&self) -> Option<&dyn Error> {
-                None
-            }
-
-            fn description(&self) -> &str {
-                "description is deprecated; use Display"
-            }
-
-            fn source(&self) -> Option<&(dyn Error + 'static)> {
-                None
-            }
-        }
-    )+};
-}
-
-macro_rules! impl_test {
-    ($($errkind: ident; $errname: ident), +) => {$(
+macro_rules! impl_errors {
+    ($($errkind: ident, $errname: ident);+) => {$(
         impl Debug for $errkind {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                write!(f, "")
+                unimplemented!();
             }
         }
 
         impl Display for $errkind {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                write!(f, "")
+                unimplemented!();
             }
         }
 
-        // impl Error for $errname {
-        //     fn cause(&self) -> Option<&dyn Error> {
-        //     }
+        impl Error for $errname {
+            fn cause(&self) -> Option<&dyn Error> {
+                unimplemented!();
+            }
 
-        //     fn description(&self) -> &str {
-        //     }
+            fn description(&self) -> &str {
+                unimplemented!();
+            }
 
-        //     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        //     }
-        // }
+            fn source(&self) -> Option<&(dyn Error + 'static)> {
+                unimplemented!();
+            }
+        }
     )+};
 }
-
-impl_test!(ArithmeticErrorKind; ArithmeticError);
-// impl_errorkind!(ArithmeticErrorKind, CongrErrorKind, CipherErrorKind);
