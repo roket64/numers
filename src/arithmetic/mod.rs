@@ -1,5 +1,4 @@
 use std::num::IntErrorKind;
-use error::ArithmeticError;
 
 pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
     fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
@@ -354,5 +353,3 @@ macro_rules! impl_arithmetic_usize {
 
 impl_arithmetic_isize!(isize; test_isize, i32; test_i32, i64; test_i64);
 impl_arithmetic_usize!(usize; test_usize, u32; test_u32, u64; test_u64);
-
-pub mod error;
