@@ -1,9 +1,9 @@
 use std::num::IntErrorKind;
 
 pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
-    fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
-    fn modular_mul(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
-    fn modular_pow(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>>;
+    fn modulo(&self, modulus: &Self) -> Result<Self, Box<IntErrorKind>>;
+    fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>>;
+    fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>>;
 }
 
 /// Calculates least positive integer k such that `x = (y * k) + modulo.`
@@ -13,8 +13,8 @@ pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
 /// assert_eq!(modulo(-9, 4).unwrap(), 3);
 /// assert_eq!(modulo(-9, -4).unwrap(), 3);
 /// ```
-pub fn modulo<T: Int>(x: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    x.modulo(&modulo)
+pub fn modulo<T: Int>(x: T, modulus: T) -> Result<T, Box<IntErrorKind>> {
+    x.modulo(&modulus)
 }
 
 /// Calculates least positive integer from modular multiplication between Int types
@@ -26,8 +26,8 @@ pub fn modulo<T: Int>(x: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
 /// let k: i32 = 7;
 /// assert_eq!(modular_mul(n, m, k).unwrap(), 1);
 /// ```
-pub fn modular_mul<T: Int>(multiplicand: T, multiplier: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    multiplicand.modular_mul(&multiplier, &modulo)
+pub fn modular_mul<T: Int>(multiplicand: T, multiplier: T, modulus: T) -> Result<T, Box<IntErrorKind>> {
+    multiplicand.modular_mul(&multiplier, &modulus)
 }
 
 /// Calculates least positive ineger from modular exponentiation between Int types
@@ -39,20 +39,20 @@ pub fn modular_mul<T: Int>(multiplicand: T, multiplier: T, modulo: T) -> Result<
 /// let k: i32 = 4;
 /// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
 /// ```
-pub fn modular_pow<T: Int>(base: T, exponent: T, modulo: T) -> Result<T, Box<IntErrorKind>> {
-    base.modular_pow(&exponent, &modulo)
+pub fn modular_pow<T: Int>(base: T, exponent: T, modulus: T) -> Result<T, Box<IntErrorKind>> {
+    base.modular_pow(&exponent, &modulus)
 }
 
 macro_rules! impl_arithmetic_isize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modulo(&self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
             }
 
-            fn modular_mul(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 // handling zero modulo
-                let mut res: $t = match *modulo {
+                let mut res: $t = match *modulus {
                     0 => return Err(Box::new(IntErrorKind::Zero)),
                     // 0 => return Err(ArithmeticErrorkind::Display),
                     _ => 0,
@@ -69,14 +69,14 @@ macro_rules! impl_arithmetic_isize {
                 //     false => -*other,
                 // };
 
-                if *modulo == 1 {
+                if *modulus == 1 {
                     return Ok(0);
                 }
 
                 while y != 0 {
                     if y & 1 == 1 {
                         match res.checked_add(x) {
-                            Some(n) => res = n % modulo,
+                            Some(n) => res = n % modulus,
                             None => match (x > 0 && y > 0) {
                                 true => return Err(Box::new(IntErrorKind::PosOverflow)),
                                 false => return Err(Box::new(IntErrorKind::NegOverflow)),
@@ -85,7 +85,7 @@ macro_rules! impl_arithmetic_isize {
                     }
                     // this will return None when x > $t::MAX / 2
                     match x.checked_mul(2) {
-                        Some(n) => x = n % modulo,
+                        Some(n) => x = n % modulus,
                         None => match (x > 0 && y > 0) {
                             true => return Err(Box::new(IntErrorKind::PosOverflow)),
                             false => return Err(Box::new(IntErrorKind::NegOverflow)),
@@ -102,18 +102,18 @@ macro_rules! impl_arithmetic_isize {
                 // for some integer k, but since we need a least positive value...
                 match (res >= 0) {
                     true => Ok(res),
-                    false => Ok(res + *modulo),
+                    false => Ok(res + *modulus),
                 }
             }
 
-            fn modular_pow(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 // handling zero modulo
-                let mut res: $t = match *modulo {
+                let mut res: $t = match *modulus {
                     0 => return Err(Box::new(IntErrorKind::Zero)),
                     _ => 1,
                 };
 
-                let mut x = *self % *modulo;
+                let mut x = *self % *modulus;
 
                 // handling negative exponent
                 let mut y = match (*other > 0) {
@@ -122,14 +122,14 @@ macro_rules! impl_arithmetic_isize {
                 };
 
                 // handling when modulo is one
-                if *modulo == 1 {
+                if *modulus == 1 {
                     return Ok(0);
                 }
 
                 while y != 0 {
                     if y & 1 == 1 {
                         match res.checked_mul(x) {
-                            Some(n) => res = n % modulo,
+                            Some(n) => res = n % modulus,
                             None => match (x > 0) {
                                 true => return Err(Box::new(IntErrorKind::PosOverflow)),
                                 false => return Err(Box::new(IntErrorKind::NegOverflow)),
@@ -137,7 +137,7 @@ macro_rules! impl_arithmetic_isize {
                         }
                     }
                     match x.checked_mul(x) {
-                        Some(n) => x = n % modulo,
+                        Some(n) => x = n % modulus,
                         None => match (x > 0) {
                             true => return Err(Box::new(IntErrorKind::PosOverflow)),
                             false => return Err(Box::new(IntErrorKind::NegOverflow)),
@@ -150,7 +150,7 @@ macro_rules! impl_arithmetic_isize {
                 // for some integer k, but since we need a least positive value...
                 match (res >= 0) {
                     true => Ok(res),
-                    false => Ok(res + *modulo),
+                    false => Ok(res + *modulus),
                 }
             }
         }
@@ -224,32 +224,32 @@ macro_rules! impl_arithmetic_isize {
 macro_rules! impl_arithmetic_usize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            fn modulo(&self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modulo(&self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 todo!();
             }
 
-            fn modular_mul(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 // handling zero modulo
-                let mut res: $t = match *modulo {
+                let mut res: $t = match *modulus {
                     0 => return Err(Box::new(IntErrorKind::Zero)),
                     _ => 0,
                 };
                 let mut x = *self;
                 let mut y = *other;
 
-                if *modulo == 0 {
+                if *modulus == 0 {
                     return Ok(0);
                 }
 
                 while y != 0 {
                     if y & 1 == 1 {
                         match res.checked_add(x) {
-                            Some(n) => res = n % modulo,
+                            Some(n) => res = n % modulus,
                             None => return Err(Box::new(IntErrorKind::PosOverflow)),
                         }
                     }
                     match x.checked_mul(2) {
-                        Some(n) => x = n % modulo,
+                        Some(n) => x = n % modulus,
                         None => return Err(Box::new(IntErrorKind::PosOverflow)),
                     }
                     y >>= 1;
@@ -259,28 +259,28 @@ macro_rules! impl_arithmetic_usize {
                 Ok(res)
             }
 
-            fn modular_pow(&self, other: &Self, modulo: &Self) -> Result<Self, Box<IntErrorKind>> {
+            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, Box<IntErrorKind>> {
                 // handling zero modulo
-                let mut res: $t = match *modulo {
+                let mut res: $t = match *modulus {
                     0 => return Err(Box::new(IntErrorKind::Zero)),
                     _ => 0,
                 };
                 let mut x = *self;
                 let mut y = *other;
 
-                if *modulo == 0 {
+                if *modulus == 0 {
                     return Ok(0);
                 }
 
                 while y != 0 {
                     if y & 1 == 1 {
                         match res.checked_mul(x) {
-                            Some(n) => res = n % modulo,
+                            Some(n) => res = n % modulus,
                             None => return Err(Box::new(IntErrorKind::PosOverflow)),
                         }
                     }
                     match x.checked_mul(x) {
-                        Some(n) => x = n % modulo,
+                        Some(n) => x = n % modulus,
                         None => return Err(Box::new(IntErrorKind::NegOverflow)),
                     }
                     y >>= 1;
