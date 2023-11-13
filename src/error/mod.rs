@@ -1,69 +1,94 @@
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display, Formatter, Result};
 
-pub enum ArithmeticErrorKind {
-    Overflow,
-    DivideByZero,
-}
-pub enum CipherErrorKind {}
-pub enum CongrErrorKind {
-    NoSuchSolution,
+pub struct IntegerError {
+    pub kind: IntegerErrorKind,
 }
 
 pub struct ArithmeticError {
     pub kind: ArithmeticErrorKind,
 }
 
-pub struct CipherError {
-    pub kind: CipherErrorKind,
+pub struct LogicError {
+    pub kind: LogicErrorKind,
 }
 
-pub struct CongruenceError {
-    pub kind: CongrErrorKind,
+pub enum IntegerErrorKind {
+    ARITHMETIC(ArithmeticError),
+    LOGIC(LogicError),
 }
 
-macro_rules! impl_errorkind {
-    ($($err_kind: ident),+) => {$(
-        impl Debug for $err_kind {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                write!(f, "")
-            }
+impl Display for IntegerErrorKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::ARITHMETIC(err) => write!(f, "{}", err),
+            Self::LOGIC(err) => write!(f, "{}", err),
         }
-
-        impl Display for $err_kind {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                write!(f, "")
-            }
-        }
-    )+};
+    }
 }
 
-macro_rules! impl_errors {
-    ($($errkind: ident, $errname: ident);+) => {$(
-        impl Debug for $errkind {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                unimplemented!();
+pub enum ArithmeticErrorKind {
+    OVERFLOW,
+    ZERO,
+}
+
+impl Display for ArithmeticErrorKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let kind = match self {
+            Self::OVERFLOW => {
+                "ArithmeticErrorKind::OVERFLOW: An overflow occurred while performing arithmetic operations."
+            }
+            Self::ZERO => {
+                "ArithmeticErrorKind::ZERO: Found illegal zero for non-zero values."
+            }
+        };
+        write!(f, "{}", kind)
+    }
+}
+
+pub enum LogicErrorKind {
+    UNSOLVABLE,
+}
+
+impl Display for LogicErrorKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let kind = match self {
+            Self::UNSOLVABLE => {
+                "LogicErrorKind::UNSOLVABLE: Could not find any possible solution of given equation."
+            }
+        };
+        write!(f, "{}", kind)
+    }
+}
+
+macro_rules! impl_error {
+    ($($err: ident),+) => {$(
+        impl Display for $err {
+            fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+                write!(f, "{}", self.kind)
             }
         }
 
-        impl Display for $errkind {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                unimplemented!();
+        impl Debug for $err {
+            fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+                write!(f, "{}", self.kind)
             }
         }
 
-        impl Error for $errname {
+        impl Error for $err {
             fn cause(&self) -> Option<&dyn Error> {
-                unimplemented!();
+                None
             }
 
             fn description(&self) -> &str {
-                unimplemented!();
+                "description is deprecated; use Display"
             }
 
             fn source(&self) -> Option<&(dyn Error + 'static)> {
-                unimplemented!();
+                None
             }
         }
     )+};
 }
+
+impl_error!(ArithmeticError, LogicError);
