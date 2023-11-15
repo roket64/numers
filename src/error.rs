@@ -91,4 +91,4 @@ macro_rules! impl_error {
     )+};
 }
 
-impl_error!(ArithmeticError, LogicError);
+impl_error!(IntegerError, ArithmeticError, LogicError);
