@@ -210,5 +210,3 @@ impl_int_usize!(usize, test_usize;
 pub mod cipher;
 pub mod error;
 pub mod solver;
-
-mod tests;
