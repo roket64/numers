@@ -1,10 +1,6 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Result};
 
-pub struct IntegerError {
-    pub kind: IntegerErrorKind,
-}
-
 pub struct ArithmeticError {
     pub kind: ArithmeticErrorKind,
 }
@@ -13,23 +9,13 @@ pub struct LogicError {
     pub kind: LogicErrorKind,
 }
 
-pub enum IntegerErrorKind {
-    ARITHMETIC(ArithmeticError),
-    LOGIC(LogicError),
-}
-
-impl Display for IntegerErrorKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::ARITHMETIC(err) => write!(f, "{}", err),
-            Self::LOGIC(err) => write!(f, "{}", err),
-        }
-    }
-}
-
 pub enum ArithmeticErrorKind {
     OVERFLOW,
     ZERO,
+}
+
+pub enum LogicErrorKind {
+    UNSOLVABLE,
 }
 
 impl Display for ArithmeticErrorKind {
@@ -46,10 +32,6 @@ impl Display for ArithmeticErrorKind {
     }
 }
 
-pub enum LogicErrorKind {
-    UNSOLVABLE,
-}
-
 impl Display for LogicErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let kind = match self {
@@ -61,7 +43,7 @@ impl Display for LogicErrorKind {
     }
 }
 
-macro_rules! impl_error {
+macro_rules! impl_interr {
     ($($err: ident),+) => {$(
         impl Display for $err {
             fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -91,4 +73,4 @@ macro_rules! impl_error {
     )+};
 }
 
-impl_error!(IntegerError, ArithmeticError, LogicError);
+impl_interr!(ArithmeticError, LogicError);

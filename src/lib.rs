@@ -4,76 +4,91 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::vec::Vec;
+use num::integer::Integer;
+use num::integer::Roots;
 use std::mem;
+use std::vec::Vec;
 
-use error::IntegerError;
+use error::{ArithmeticError, ArithmeticErrorKind};
 use solver::BezoutIdentity;
 
-pub trait Int: Sized + PartialOrd + Ord + PartialEq + Eq {
-    fn gcd(&self, other: &Self) -> Result<Self, IntegerError>;
-    fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, IntegerError>;
-    fn factorize(&self) -> Result<Vec<Self>, IntegerError>;
-    fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, IntegerError>;
-    fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, IntegerError>;
+pub trait Int: Integer {
+    /// Calculates greatest common divisor of given integeres.
+    fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>;
+
+    /// Calculates greatest common divisor of given integers and returns the BézoutIdentity,
+    /// which is the solution to the equation `ax + by = gcd(a, b)`.
+    fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError>;
+
+    /// Factorizes an single integer and returns `Vec` containing non-trivial divisors. \
+    /// Time complexity is O(n^¼), since it is a variant implementation of Pollard-rho algorithm.
+    fn factorize(&self) -> Result<Vec<Self>, ArithmeticError>;
+
+    /// Calculates least nonnegative integer from modular multiplication between Int types
+    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
+    /// # Examples
+    /// ```
+    /// let n: i32 = 5;
+    /// let m: i32 = 10;
+    /// let k: i32 = 7;
+    /// assert_eq!(modular_mul(n, m, k).unwrap(), 1);
+    /// ```
+    fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
+
+    /// Calculates least nonnegative ineger from modular exponentiation between Int types
+    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
+    /// # Examples
+    /// ```
+    /// let n: i32 = 2;
+    /// let m: i32 = 3;
+    /// let k: i32 = 4;
+    /// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
+    /// ```
+    fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 }
 
-pub trait Equation {
-    fn solve();
+/// Calculates Greatest Common Divisor
+pub fn gcd<T: Int>(x: T, y: T) -> Result<T, ArithmeticError> {
+    x.igcd(&y)
 }
 
-/// Calculates greatest common divisor of given integeres.
-pub fn gcd<T: Int>(x: T, y: T) -> Result<T, IntegerError> {
-    x.gcd(&y)
-}
-
-/// Calculates greatest common divisor of given integers and returns the BezoutIdentity,
-/// which is the solution to the equation `ax + by = gcd(a, b)`.
-pub fn ext_gcd<T: Int>(x: T, y: T) -> Result<BezoutIdentity<T>, IntegerError> {
+/// Calculates Greatest Common Divior and Bézout's Identity
+pub fn ext_gcd<T: Int>(x: T, y: T) -> Result<BezoutIdentity<T>, ArithmeticError> {
     x.ext_gcd(&y)
 }
 
-/// Factorizes an single integer and returns `Vec` containing non-trivial divisors. \
-/// Time complexity is O(n^¼), since it is a variant implementation of Pollard-rho algorithm.
-pub fn factorize<T: Int>(x: T) -> Result<Vec<T>, IntegerError> {
+/// Factorizes an integer
+pub fn factorize<T: Int>(x: T) -> Result<Vec<T>, ArithmeticError> {
     x.factorize()
 }
 
-/// Calculates least positive integer from modular multiplication between Int types
-/// and returns `Result<T, IntegerError>` wether the computation was successful.
-/// # Examples
-/// ```
-/// let n: i32 = 5;
-/// let m: i32 = 10;
-/// let k: i32 = 7;
-/// assert_eq!(modular_mul(n, m, k).unwrap(), 1);
-/// ```
-pub fn modular_mul<T: Int>(x: T, y: T, modulus: T) -> Result<T, IntegerError> {
+/// Returns least nonnegative integer from modular multiplication
+pub fn modular_mul<T: Int>(x: T, y: T, modulus: T) -> Result<T, ArithmeticError> {
     x.modular_mul(&y, &modulus)
 }
 
-/// Calculates least positive ineger from modular exponentiation between Int types
-/// and returns `Result<T, IntegerError>` wether the compute was successful.
-/// # Examples
-/// ```
-/// let n: i32 = 2;
-/// let m: i32 = 3;
-/// let k: i32 = 4;
-/// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
-/// ```
-pub fn modular_pow<T: Int>(base: T, exponent: T, modulus: T) -> Result<T, IntegerError> {
+/// Returns least nonnegative integer from modular exponentiation
+pub fn modular_pow<T: Int>(base: T, exponent: T, modulus: T) -> Result<T, ArithmeticError> {
     base.modular_pow(&exponent, &modulus)
 }
 
-macro_rules! impl_int_usize {
+macro_rules! impl_int_isize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            // GCD implmentation, using Binary Euclid Algorithm.
-            fn gcd(&self, other: &Self) -> Result<Self, IntegerError> {
-                // Since this is implementation for usize values,
-                // it's not necessary to cast them into absoulute value.
-                let mut x = *self;
-                let mut y = *other;
+            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>{
+                // converting to absolute value may cause overflow
+                let mut x: $t = match self.checked_abs() {
+                    Some(n) => n,
+                    None => return Err(ArithmeticError{
+                        kind: ArithmeticErrorKind::OVERFLOW
+                    }),
+                };
+                let mut y: $t = match other.checked_abs() {
+                    Some(n) => n,
+                    None => return Err(ArithmeticError{
+                        kind: ArithmeticErrorKind::OVERFLOW
+                    }),
+                };
 
                 if x == 0 {
                     return Ok(y);
@@ -84,7 +99,6 @@ macro_rules! impl_int_usize {
 
                 // Greatest power of two that divides both x and y.
                 let mut k = 0;
-
                 // Finding k by dividing x and y until one becomes an odd.
                 while ((x | y) & 1) == 0 {
                     x >>= 1;
@@ -92,13 +106,11 @@ macro_rules! impl_int_usize {
                     k += 1;
                 }
 
-                // Dividing x until it becomes an odd.
-                while (x & 1) == 0 {
-                    x >>= 1;
-                }
-
                 while y != 0 {
-                    // Removing factors of two in y.
+                    // Removing factors of two in x and y.
+                    while (x & 1) == 0 {
+                        x >>= 1;
+                    }
                     while (y & 1) == 0 {
                         y >>= 1;
                     }
@@ -107,7 +119,6 @@ macro_rules! impl_int_usize {
                     if x > y {
                         mem::swap(&mut x, &mut y);
                     }
-
                     y -= x;
                 }
 
@@ -115,71 +126,159 @@ macro_rules! impl_int_usize {
                 Ok(x << k)
             }
 
-            // Extended Euclidean Algorithm implementation
-            fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, IntegerError> {
-                let mut a1 = *self;
-                let mut b1 = *other;
+            fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
+                if *self == 0 {
+                    return Ok(BezoutIdentity {
+                        gcd: *other as $t,
+                        a_coeff: 0,
+                        b_coeff: 1,
+                    })
+                }
+                if *other == 0 {
+                    return Ok(BezoutIdentity {
+                        gcd: *self as $t,
+                        a_coeff: 1,
+                        b_coeff: 0,
+                    })
+                }
 
-                let mut x0 = 1;
-                let mut x1 = 0;
-                let mut y0 = 0;
-                let mut y1 = 1;
-        
-        
-                while b1 != 0 {
-                    let q = a1 / b1;
+                let mut a0: i64 = *self as i64;
+                let mut b0: i64 = *other as i64;
+
+                let mut x0: i64 = 1;
+                let mut x1: i64 = 0;
+                let mut y0: i64 = 0;
+                let mut y1: i64 = 1;
+
+                while b0 != 0 {
+                    let q: i64 = a0 / b0;
                     (x0, x1) = (x1, x0 - q * x1);
                     (y0, y1) = (y1, y0 - q * y1);
-                    (a1, b1) = (b1, a1 - q * b1);
+                    (a0, b0) = (b0, a0 - q * b0);
                 }
-        
-                Ok(BezoutIdentity {
-                    gcd: a1,
-                    a_coeff: x0,
-                    b_coeff: y0,
-                })
+
+                if a0 >= 0 {
+                    Ok(BezoutIdentity {
+                        gcd: a0.abs() as $t,
+                        a_coeff: x0,
+                        b_coeff: y0,
+                    })
+                } else {
+                    Ok(BezoutIdentity {
+                        gcd: a0.abs() as $t,
+                        a_coeff: -x0,
+                        b_coeff: -y0,
+                    })
+                }
             }
 
-            fn factorize(&self) -> Result<Vec::<Self>, IntegerError> {
+            fn factorize(&self) -> Result<Vec<Self>, ArithmeticError> {
+                // check when *self is negative
                 unimplemented!()
             }
 
-            fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, IntegerError> {
-                unimplemented!()
-            }
+            fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                // use checked_rem_euclid()
+                let mut res: $t = match *modulus != 0 {
+                    true => 0,
+                    false => {
+                        return Err(ArithmeticError {
+                            kind: ArithmeticErrorKind::ZERO
+                        })
+                    }
+                };
 
-            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, IntegerError> {
-                let mut res: $t = 1;
                 let mut x: $t = *self;
-                let mut y: $t = *other;
-                let m = *modulus;
+                let mut y: $t = match *other < 0 {
+                    true => -*other,
+                    false => *other,
+                };
+                let m: $t = *modulus;
+
+                while y != 0 {
+                    if y & 1 == 1 {
+                        res = match res.checked_add(x) {
+                            Some(n) => n,
+                            None => {
+                                return Err(ArithmeticError {
+                                    kind: ArithmeticErrorKind::OVERFLOW,
+                                })
+                            }
+                        };
+                        // using rem_euclid() since we want a nonnegative remainder
+                        res = res.rem_euclid(m);
+                    }
+
+                    x = match x.checked_mul(2) {
+                        Some(n) => n,
+                        None => {
+                            return Err(ArithmeticError {
+                                kind: ArithmeticErrorKind::OVERFLOW,
+                            })
+                        }
+                    };
+                    res = res.rem_euclid(m);
+                    y >>= 1;
+                }
+
+                Ok(res)
+            }
+
+            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                let mut res: $t = match *modulus != 0 {
+                    true => 1,
+                    false => {
+                        return Err(ArithmeticError {
+                            kind: ArithmeticErrorKind::ZERO
+                        })
+                    }
+                };
+
+                let mut x: $t= *self;
+                let mut y: $t = match *other < 0 {
+                    true => *other,
+                    false => return Ok(0),
+                };
+                let m: $t = *modulus;
 
                 x %= m;
 
                 while y != 0 {
                     if y & 1 == 1 {
                         res = match res.checked_mul(x) {
-                            Some(n) => n % m,
-                            None => unimplemented!(),
+                            Some(n) => n,
+                            None => {
+                                return Err(ArithmeticError {
+                                    kind: ArithmeticErrorKind::OVERFLOW,
+                                })
+                            }
                         };
+                        x = x.rem_euclid(m);
                     }
+
                     x = match x.checked_mul(x) {
-                        Some(n) => n % m,
-                        None => unimplemented!(),
+                        Some(n) => n,
+                        None => {
+                            return Err(ArithmeticError {
+                                kind: ArithmeticErrorKind::OVERFLOW,
+                            })
+                        }
                     };
+                    x = x.rem_euclid(m);
                     y >>= 1;
                 }
 
                 Ok(x)
             }
         }
-
+    
         #[cfg(test)]
         mod $test_mod {
             #[test]
             fn test_gcd() {
                 todo!()
             }
+
             #[test]
             fn test_ext_gcd() {
                 todo!()
@@ -202,6 +301,249 @@ macro_rules! impl_int_usize {
         }
     )+};
 }
+
+macro_rules! impl_int_usize {
+    ($($t: ty, $test_mod: ident);+) => {$(
+        impl Int for $t {
+            // GCD implmentation, using Binary Euclid Algorithm
+            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError> {
+                // It's not necessary to cast them into absoulute value,
+                // since this is implementation for usize values.
+                let mut x = *self;
+                let mut y = *other;
+
+                if x == 0 {
+                    return Ok(y);
+                }
+                if y == 0 {
+                    return Ok(x);
+                }
+
+                // Greatest power of two that divides both x and y.
+                let mut k = 0;
+                // Finding k by dividing x and y until one becomes an odd.
+                while ((x | y) & 1) == 0 {
+                    x >>= 1;
+                    y >>= 1;
+                    k += 1;
+                }
+
+                while y != 0 {
+                    // Removing factors of two in x and y.
+                    while (x & 1) == 0 {
+                        x >>= 1;
+                    }
+                    while (y & 1) == 0 {
+                        y >>= 1;
+                    }
+
+                    // From here x always smaller or equal to y.
+                    if x > y {
+                        mem::swap(&mut x, &mut y);
+                    }
+                    y -= x;
+                }
+
+                // Restore common factors of two.
+                Ok(x << k)
+            }
+
+            // Extended Euclidean Algorithm implementation
+            fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
+                // All arguments and variables must be signed values,
+                // since Bezout's Identity can have negative coefficients.
+                if *self == 0 {
+                    return Ok(BezoutIdentity {
+                        gcd: *other as $t,
+                        a_coeff: 0,
+                        b_coeff: 1,
+                    })
+                }
+                if *other == 0 {
+                    return Ok(BezoutIdentity {
+                        gcd: *self as $t,
+                        a_coeff: 1,
+                        b_coeff: 0,
+                    })
+                }
+
+                // TODO: This may panic when size of `*self` doesn't fit to `i64`
+                let mut a0 = *self as i64;
+                let mut b0 = *other as i64;
+
+                let mut x0: i64 = 1;
+                let mut x1: i64 = 0;
+                let mut y0: i64 = 0;
+                let mut y1: i64 = 1;
+
+                while b0 != 0 {
+                    let q: i64 = a0 / b0;
+                    (x0, x1) = (x1, x0 - q * x1);
+                    (y0, y1) = (y1, y0 - q * y1);
+                    (a0, b0) = (b0, a0 - q * b0);
+                }
+
+                Ok(BezoutIdentity {
+                    gcd: a0 as $t,
+                    a_coeff: x0,
+                    b_coeff: y0,
+                })
+            }
+
+            // Factorization implement, using Pollard-Rho Algorithm
+            fn factorize(&self) -> Result<Vec::<Self>, ArithmeticError> {
+                // TODO: using trial division instead for now
+                let x: $t = *self;
+                let mut res: Vec::<Self> = Vec::new();
+
+                for i in 2..=x.sqrt() {
+                    if x % i == 0 {
+                        match i * i == x {
+                            true => {
+                                res.push(i);
+                            },
+                            false => {
+                                res.push(i);
+                                res.push(x / i);
+                            }
+                        }
+                    }
+                }
+                res.sort();
+
+                Ok(res)
+            }
+
+            // Modular multiplication implementation
+            fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                let mut res: $t = match *modulus != 0 {
+                    true => 0,
+                    false => {
+                        return Err(ArithmeticError {
+                            kind: ArithmeticErrorKind::ZERO
+                        })
+                    }
+                };
+
+                let mut x: $t = *self;
+                let mut y: $t = *other;
+                let m: $t = *modulus;
+
+                while y != 0 {
+                    if y & 1 == 1 {
+                        res = match res.checked_add(x) {
+                            Some(n) => n,
+                            None => {
+                                return Err(ArithmeticError {
+                                    kind: ArithmeticErrorKind::OVERFLOW,
+                                })
+                            }
+                        };
+                        // No need to use `checked_rem_euclid()`
+                        // since x and m are always positive
+                        res %= m;
+                    }
+
+                    x = match x.checked_mul(2) {
+                        Some(n) => n,
+                        None => {
+                            return Err(ArithmeticError {
+                                kind: ArithmeticErrorKind::OVERFLOW,
+                            })
+                        }
+                    };
+                    // No need to use `checked_rem_euclid()`
+                    // since x and m are always positive
+                    x %= m;
+                    y >>= 1;
+                }
+
+                Ok(res)
+            }
+
+            // Modular exponentiation implementation, using Binary Exponentiation Algorithm
+            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                let mut res: $t = match *modulus != 0 {
+                    true => 1,
+                    false => {
+                        return Err(ArithmeticError {
+                            kind: ArithmeticErrorKind::ZERO
+                        })
+                    }
+                };
+
+                let mut x: $t= *self;
+                let mut y: $t = *other;
+                let m: $t = *modulus;
+
+                x %= m;
+
+                while y != 0 {
+                    if y & 1 == 1 {
+                        res = match res.checked_mul(x) {
+                            Some(n) => n,
+                            None => {
+                                return Err(ArithmeticError {
+                                    kind: ArithmeticErrorKind::OVERFLOW,
+                                })
+                            }
+                        };
+                        // No need to use `checked_rem_euclid()`
+                        // since x and m are always positive
+                        x %= m;
+                    }
+
+                    x = match x.checked_mul(x) {
+                        Some(n) => n,
+                        None => {
+                            return Err(ArithmeticError {
+                                kind: ArithmeticErrorKind::OVERFLOW,
+                            })
+                        }
+                    };
+                    // No need to use `checked_rem_euclid()`
+                    // since x and m are always positive
+                    x %= m;
+                    y >>= 1;
+                }
+
+                Ok(x)
+            }
+        }
+
+        #[cfg(test)]
+        mod $test_mod {
+            #[test]
+            fn test_gcd() {
+                todo!()
+            }
+
+            #[test]
+            fn test_ext_gcd() {
+                todo!()
+            }
+
+            #[test]
+            fn test_factorize() {
+                todo!()
+            }
+
+            #[test]
+            fn test_modular_mul() {
+                todo!()
+            }
+
+            #[test]
+            fn test_modular_pow() {
+                todo!()
+            }
+        }
+    )+};
+}
+
+impl_int_isize!(isize, test_isize;
+                i32, test_i32;
+                i64, test_i64);
 
 impl_int_usize!(usize, test_usize;
                 u32, test_u32;
