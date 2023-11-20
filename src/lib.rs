@@ -24,7 +24,7 @@ pub trait Int: Integer {
     /// Time complexity is O(n^¼), since it is a variant implementation of Pollard-rho algorithm.
     fn factorize(&self) -> Result<Vec<Self>, ArithmeticError>;
 
-    /// Calculates least nonnegative integer from modular multiplication between Int types
+    /// Calculates least nonnegative integer from modular multiplication between given integers
     /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// # Examples
     /// ```
@@ -35,7 +35,7 @@ pub trait Int: Integer {
     /// ```
     fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
-    /// Calculates least nonnegative ineger from modular exponentiation between Int types
+    /// Calculates least nonnegative ineger from modular exponentiation between given integers
     /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// # Examples
     /// ```
@@ -157,7 +157,7 @@ macro_rules! impl_int_isize {
                     (a0, b0) = (b0, a0 - q * b0);
                 }
 
-                if a0 >= 0 {
+                if a0 > 0 {
                     Ok(BezoutIdentity {
                         gcd: a0.abs() as $t,
                         a_coeff: x0,
@@ -173,8 +173,31 @@ macro_rules! impl_int_isize {
             }
 
             fn factorize(&self) -> Result<Vec<Self>, ArithmeticError> {
-                // check when *self is negative
-                unimplemented!()
+                // TODO: using trial division instead for now
+                let is_neg = *self < 0;
+                let x: $t = self.abs();
+                let mut res: Vec::<Self> = Vec::new();
+
+                for i in 2..=x.sqrt() {
+                    if x % i == 0 {
+                        match i * i == x {
+                            true => {
+                                res.push(i);
+                            },
+                            false => {
+                                res.push(i);
+                                res.push(x / i);
+                            }
+                        }
+                    }
+                }
+                res.sort();
+
+                if is_neg {
+                    res[0] = -res[0];
+                }
+
+                Ok(res)
             }
 
             fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
