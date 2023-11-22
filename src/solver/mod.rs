@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use super::error::LogicError;
 use super::Int;
 
-pub trait Equation {
+pub trait Solve {
     fn solve(&self) -> Result<i32, LogicError>;
 }
 
