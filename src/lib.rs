@@ -20,11 +20,15 @@ pub trait Int: Integer {
     /// which is the solution to the equation `ax + by = gcd(a, b)`.
     fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError>;
 
+    /// Returns `Option<Vec<Self>>` containing non-trivial divisors of the given integer
+    /// wrapped `Result` wether the calculation was successful.
+    fn factors(&self) -> Result<Option<Vec<Self>>, ArithmeticError>;
+
     /// Factorizes an single integer and returns `Vec` containing non-trivial divisors. \
-    /// Time complexity is O(n^¼), since it is a variant implementation of Pollard-rho algorithm.
+    /// Time complexity is `O(n^¼)`, since it's a variant of Pollard-rho algorithm.
     fn factorize(&self) -> Result<Vec<Self>, ArithmeticError>;
 
-    /// Calculates least nonnegative integer from modular multiplication between Int types
+    /// Calculates least nonnegative integer from modular multiplication between given integers
     /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// # Examples
     /// ```
@@ -35,7 +39,7 @@ pub trait Int: Integer {
     /// ```
     fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
-    /// Calculates least nonnegative ineger from modular exponentiation between Int types
+    /// Calculates least nonnegative ineger from modular exponentiation between given integers
     /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// # Examples
     /// ```
@@ -45,6 +49,17 @@ pub trait Int: Integer {
     /// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
     /// ```
     fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
+
+    /// Tests primality of the given intger and returns `bool` wether integer is prime. \
+    /// Time complexity is `O(log^3N)`, since it's a variant of Miller-Rabin Test.
+    /// # Examples
+    /// ```
+    /// let n: i32 = 2;
+    /// let m: i32 = 16;k
+    /// assert!(n.is_prime());
+    /// assert!(!m.is_prime());
+    /// ```
+    fn is_prime(&self) -> Result<bool, ArithmeticError>;
 }
 
 /// Calculates Greatest Common Divisor
@@ -55,6 +70,11 @@ pub fn gcd<T: Int>(x: T, y: T) -> Result<T, ArithmeticError> {
 /// Calculates Greatest Common Divior and Bézout's Identity
 pub fn ext_gcd<T: Int>(x: T, y: T) -> Result<BezoutIdentity<T>, ArithmeticError> {
     x.ext_gcd(&y)
+}
+
+// Factors of an integer
+pub fn factors<T: Int>(x: T) -> Result<Option<Vec<T>>, ArithmeticError> {
+    x.factors()
 }
 
 /// Factorizes an integer
@@ -70,6 +90,11 @@ pub fn modular_mul<T: Int>(x: T, y: T, modulus: T) -> Result<T, ArithmeticError>
 /// Returns least nonnegative integer from modular exponentiation
 pub fn modular_pow<T: Int>(base: T, exponent: T, modulus: T) -> Result<T, ArithmeticError> {
     base.modular_pow(&exponent, &modulus)
+}
+
+/// Returns bool wether the given integer is prime number
+pub fn is_prime<T: Int>(x: T) -> Result<bool, ArithmeticError> {
+    x.is_prime()
 }
 
 macro_rules! impl_int_isize {
@@ -157,7 +182,7 @@ macro_rules! impl_int_isize {
                     (a0, b0) = (b0, a0 - q * b0);
                 }
 
-                if a0 >= 0 {
+                if a0 > 0 {
                     Ok(BezoutIdentity {
                         gcd: a0.abs() as $t,
                         a_coeff: x0,
@@ -172,9 +197,54 @@ macro_rules! impl_int_isize {
                 }
             }
 
+            fn factors(&self) -> Result<Option<Vec<Self>>, ArithmeticError> {
+                let is_neg = *self < 0;
+                let x: $t = self.abs();
+                let mut res: Vec::<Self> = vec![];
+
+                for i in 2..=x.sqrt() {
+                    if x % i == 0 {
+                        match i * i == x {
+                            true => {
+                                res.push(i);
+                            },
+                            false => {
+                                res.push(i);
+                                res.push(x / i);
+                            }
+                        }
+                    }
+                }
+                res.sort();
+
+                if res.len() > 0 {
+                    if is_neg {
+                        res[0] = -res[0];
+                    }
+
+                    return Ok(Some(res));
+                }
+
+                Ok(None)
+            }
+
             fn factorize(&self) -> Result<Vec<Self>, ArithmeticError> {
-                // check when *self is negative
-                unimplemented!()
+                // TODO: implmented trial division instead for now
+                let mut x: $t = *self;
+                let mut res: Vec::<Self> = vec![];
+
+                for i in 2..x.sqrt() {
+                    while x % i == 0 {
+                        res.push(i);
+                        x /= i;
+                    }
+                }
+                if x > 1 {
+                    res.push(x)
+                }
+                res.sort();
+
+                Ok(res)
             }
 
             fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
@@ -270,8 +340,12 @@ macro_rules! impl_int_isize {
 
                 Ok(x)
             }
+
+            fn is_prime(&self) -> Result<bool, ArithmeticError> {
+                unimplemented!()
+            }
         }
-    
+
         #[cfg(test)]
         mod $test_mod {
             #[test]
@@ -390,11 +464,9 @@ macro_rules! impl_int_usize {
                 })
             }
 
-            // Factorization implement, using Pollard-Rho Algorithm
-            fn factorize(&self) -> Result<Vec::<Self>, ArithmeticError> {
-                // TODO: using trial division instead for now
+            fn factors(&self) -> Result<Option<Vec<Self>>, ArithmeticError> {
                 let x: $t = *self;
-                let mut res: Vec::<Self> = Vec::new();
+                let mut res: Vec::<Self> = vec![];
 
                 for i in 2..=x.sqrt() {
                     if x % i == 0 {
@@ -408,6 +480,30 @@ macro_rules! impl_int_usize {
                             }
                         }
                     }
+                }
+                res.sort();
+
+                if res.len() > 0 {
+                    return Ok(Some(res));
+                }
+
+                Ok(Some(res))
+            }
+
+            // Factorization implement, using Pollard-Rho Algorithm
+            fn factorize(&self) -> Result<Vec::<Self>, ArithmeticError> {
+                // TODO: implmented trial division instead for now
+                let mut x: $t = *self;
+                let mut res: Vec::<Self> = vec![];
+
+                for i in 2..=x.sqrt() {
+                    while x % i == 0 {
+                        res.push(i);
+                        x /= i;
+                    }
+                }
+                if x > 1 {
+                    res.push(x);
                 }
                 res.sort();
 
@@ -508,6 +604,10 @@ macro_rules! impl_int_usize {
                 }
 
                 Ok(x)
+            }
+
+            fn is_prime(&self) -> Result<bool, ArithmeticError> {
+                unimplemented!()
             }
         }
 
