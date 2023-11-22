@@ -73,7 +73,7 @@ pub fn ext_gcd<T: Int>(x: T, y: T) -> Result<BezoutIdentity<T>, ArithmeticError>
 }
 
 // Factors of an integer
-fn factors<T: Int>(x: T) -> Result<Option<Vec<T>>, ArithmeticError> {
+pub fn factors<T: Int>(x: T) -> Result<Option<Vec<T>>, ArithmeticError> {
     x.factors()
 }
 
