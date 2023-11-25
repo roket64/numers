@@ -338,7 +338,7 @@ macro_rules! impl_int_isize {
                     y >>= 1;
                 }
 
-                Ok(x)
+                Ok(res)
             }
 
             fn is_prime(&self) -> Result<bool, ArithmeticError> {
@@ -603,7 +603,7 @@ macro_rules! impl_int_usize {
                     y >>= 1;
                 }
 
-                Ok(x)
+                Ok(res)
             }
 
             fn is_prime(&self) -> Result<bool, ArithmeticError> {
@@ -643,11 +643,13 @@ macro_rules! impl_int_usize {
 
 impl_int_isize!(isize, test_isize;
                 i32, test_i32;
-                i64, test_i64);
+                i64, test_i64;
+                i128, test_i128);
 
 impl_int_usize!(usize, test_usize;
                 u32, test_u32;
-                u64, test_u64);
+                u64, test_u64;
+                u128, test_u128);
 
 pub mod cipher;
 pub mod error;
