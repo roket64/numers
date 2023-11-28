@@ -42,7 +42,10 @@ pub trait Int: Integer {
     fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
     /// Calculates least nonnegative ineger from modular exponentiation between given integers
-    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
+    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful. 
+    /// Since we are interested in integers only, the result on negative exponent will return 0. \
+    /// This implements the Binary Exponentiation Algorithm, hence the time complexity on
+    /// integer `x^y (mod n)` is `O(log2(y))`. 
     /// # Examples
     /// ```
     /// let n: i32 = 2;
@@ -52,15 +55,22 @@ pub trait Int: Integer {
     /// ```
     fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
-    /// Tests primality of the given intger and returns `bool` wether integer is prime. \
-    /// Time complexity is `O(log^3N)`, since it's a variant of Miller-Rabin Test.
+    /// Tests primality of the given intger and returns `bool` wether the integer is prime. \
+    /// This implementation is a variant of Miller-Rabin Primality Test,
+    /// hecne time complexity is `O(log^3N)`. Works deterministically
+    /// for 64-bit integers, and the probobility of returning `true` for pseudoprime
+    /// is `0.25^20 * ln(n)`.
     /// # Examples
     /// ```
-    /// let n: i32 = 2;
-    /// let m: i32 = 16;k
+    /// let n = 561; // Carmichael number
+    /// let m = 100000007;
+    /// assert!(!n.is_prime());
     /// assert!(n.is_prime());
-    /// assert!(!m.is_prime());
     /// ```
+    /// # Panic
+    /// Basically this function will return `ArithmeticError` when
+    /// the computation was not successful, but still could panic
+    /// on unexpected situations or undefined behaviors.
     fn is_prime(&self) -> Result<bool, ArithmeticError>;
 }
 
