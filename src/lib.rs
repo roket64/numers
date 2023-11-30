@@ -370,7 +370,7 @@ macro_rules! impl_int_isize {
                 let bin_expan = |n: i128| {
                     let mut d = n;
                     let mut s = 0;
-                    while (!d & 1) == 1 {
+                    while (d & 1) == 0 {
                         s += 1;
                         d >>= 1;
                     }
