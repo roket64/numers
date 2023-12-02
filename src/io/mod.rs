@@ -63,5 +63,3 @@ impl_write_vec!(isize, write_isizev;
                 usize, write_usize;
                 u32, write_u32v;
                 u64, write_u64v);
-
-pub mod path;
