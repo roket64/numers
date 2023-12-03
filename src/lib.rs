@@ -968,6 +968,5 @@ impl_int_usize!(usize, test_usize;
                 u64, test_u64;
                 u128, test_u128);
 
-pub mod cipher;
 pub mod error;
 pub mod io;
