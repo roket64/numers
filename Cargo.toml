@@ -6,10 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "numerslib"
+name = "numers"
 path = "src/lib.rs"
 doctest = false
-
 
 [[bin]]
 name = "main"
