@@ -969,4 +969,3 @@ impl_int_usize!(usize, test_usize;
                 u128, test_u128);
 
 pub mod error;
-pub mod io;
