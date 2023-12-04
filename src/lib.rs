@@ -5,6 +5,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+pub mod error;
+
 use rand::random;
 use num::integer::Integer;
 use num::integer::Roots;
@@ -39,10 +41,7 @@ macro_rules! impl_bezoutid {
 impl_bezoutid!(isize, i32, i64, usize, u32, u64);
 
 pub trait Int: Integer {
-    /// Calculates greatest common divisor of given integeres.
-    fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>;
-
-    /// Calculates greatest common divisor of given integers and returns the BézoutIdentity,
+    /// Calculates greatest common divisor of given integers and returns the Bézout's Identity,
     /// which is the solution to the equation `ax + by = gcd(a, b)`.
     fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError>;
 
@@ -98,11 +97,6 @@ pub trait Int: Integer {
     fn is_prime(&self) -> Result<bool, ArithmeticError>;
 }
 
-/// Calculates Greatest Common Divisor
-pub fn gcd<T: Int>(x: T, y: T) -> Result<T, ArithmeticError> {
-    x.igcd(&y)
-}
-
 /// Calculates Greatest Common Divior and Bézout's Identity
 pub fn ext_gcd<T: Int>(x: T, y: T) -> Result<BezoutIdentity<T>, ArithmeticError> {
     x.ext_gcd(&y)
@@ -136,57 +130,6 @@ pub fn is_prime<T: Int>(x: T) -> Result<bool, ArithmeticError> {
 macro_rules! impl_int_isize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>{
-                // converting to absolute value may cause overflow
-                let mut x: $t = match self.checked_abs() {
-                    Some(n) => n,
-                    None => return Err(ArithmeticError{
-                        kind: ArithmeticErrorKind::OVERFLOW
-                    }),
-                };
-                let mut y: $t = match other.checked_abs() {
-                    Some(n) => n,
-                    None => return Err(ArithmeticError{
-                        kind: ArithmeticErrorKind::OVERFLOW
-                    }),
-                };
-
-                if x == 0 {
-                    return Ok(y);
-                }
-                if y == 0 {
-                    return Ok(x);
-                }
-
-                // Greatest power of two that divides both x and y.
-                let mut k = 0;
-                // Finding k by dividing x and y until one becomes an odd.
-                while ((x | y) & 1) == 0 {
-                    x >>= 1;
-                    y >>= 1;
-                    k += 1;
-                }
-
-                while y != 0 {
-                    // Removing factors of two in x and y.
-                    while (x & 1) == 0 {
-                        x >>= 1;
-                    }
-                    while (y & 1) == 0 {
-                        y >>= 1;
-                    }
-
-                    // From here x always smaller or equal to y.
-                    if x > y {
-                        mem::swap(&mut x, &mut y);
-                    }
-                    y -= x;
-                }
-
-                // Restore common factors of two.
-                Ok(x << k)
-            }
-
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 if *self == 0 {
                     return Ok(BezoutIdentity {
@@ -560,49 +503,6 @@ macro_rules! impl_int_isize {
 macro_rules! impl_int_usize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            // GCD implmentation, using Binary Euclid Algorithm
-            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError> {
-                // It's not necessary to cast them into absoulute value,
-                // since this is implementation for usize values.
-                let mut x = *self;
-                let mut y = *other;
-
-                if x == 0 {
-                    return Ok(y);
-                }
-                if y == 0 {
-                    return Ok(x);
-                }
-
-                // Greatest power of two that divides both x and y.
-                let mut k = 0;
-                // Finding k by dividing x and y until one becomes an odd.
-                while ((x | y) & 1) == 0 {
-                    x >>= 1;
-                    y >>= 1;
-                    k += 1;
-                }
-
-                while y != 0 {
-                    // Removing factors of two in x and y.
-                    while (x & 1) == 0 {
-                        x >>= 1;
-                    }
-                    while (y & 1) == 0 {
-                        y >>= 1;
-                    }
-
-                    // From here x always smaller or equal to y.
-                    if x > y {
-                        mem::swap(&mut x, &mut y);
-                    }
-                    y -= x;
-                }
-
-                // Restore common factors of two.
-                Ok(x << k)
-            }
-
             // Extended Euclidean Algorithm implementation
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 // All arguments and variables must be signed values,
@@ -967,5 +867,3 @@ impl_int_usize!(usize, test_usize;
                 u32, test_u32;
                 u64, test_u64;
                 u128, test_u128);
-
-pub mod error;
