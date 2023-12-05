@@ -5,20 +5,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use rand::random;
-use num::integer::Integer;
-use num::integer::Roots;
+pub mod error;
 
+use num_integer::Integer;
+use num_integer::Roots;
+use rand::random;
+
+use std::fmt::{Display, Formatter};
 use std::mem;
 use std::vec::Vec;
-use std::fmt::{Display, Formatter};
 
 use error::{ArithmeticError, ArithmeticErrorKind};
 
 /// Structure represents the Bézout's Identity. \
 /// `a_coeff` represents `x` and `b_coeff` represents `y` from
 /// equation `ax + by = gcd(a, b)`.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BezoutIdentity<T: Int> {
     pub gcd: T,
     pub a_coeff: i64,
@@ -39,10 +41,7 @@ macro_rules! impl_bezoutid {
 impl_bezoutid!(isize, i32, i64, usize, u32, u64);
 
 pub trait Int: Integer {
-    /// Calculates greatest common divisor of given integeres.
-    fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>;
-
-    /// Calculates greatest common divisor of given integers and returns the BézoutIdentity,
+    /// Calculates greatest common divisor of given integers and returns the Bézout's Identity,
     /// which is the solution to the equation `ax + by = gcd(a, b)`.
     fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError>;
 
@@ -66,10 +65,10 @@ pub trait Int: Integer {
     fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
     /// Calculates least nonnegative ineger from modular exponentiation between given integers
-    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful. 
+    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// Since we are interested in integers only, the result on negative exponent will return 0. \
     /// This implements the Binary Exponentiation Algorithm, hence the time complexity on
-    /// integer `x^y (mod n)` is `O(log2(y))`. 
+    /// integer `x^y (mod n)` is `O(log2(y))`.
     /// # Examples
     /// ```
     /// let n: i32 = 2;
@@ -96,11 +95,28 @@ pub trait Int: Integer {
     /// the computation was not successful, but still could panic
     /// on unexpected situations or undefined behaviors.
     fn is_prime(&self) -> Result<bool, ArithmeticError>;
-}
 
-/// Calculates Greatest Common Divisor
-pub fn gcd<T: Int>(x: T, y: T) -> Result<T, ArithmeticError> {
-    x.igcd(&y)
+    /// returns square root of `&self` modulo p
+    /// modulus value must be a prime.
+    fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError>;
+
+    /// returns the number of primes smaller or equal to `&self`
+    fn pi(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of integers that is coprime to `&self`
+    fn euler_phi(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of positive factors of `&self`
+    fn tau(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the sum of positive factors including trivial divisors of `&self`
+    fn sigma(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of prime factors of `&self`
+    fn omega(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the Jacobi Symbol of the given integer.
+    fn jacobi(&self) -> Result<isize, ArithmeticError>;
 }
 
 /// Calculates Greatest Common Divior and Bézout's Identity
@@ -133,60 +149,43 @@ pub fn is_prime<T: Int>(x: T) -> Result<bool, ArithmeticError> {
     x.is_prime()
 }
 
+fn modular_sqrt<T: Int>(x: T, modulus: T) -> Result<T, ArithmeticError> {
+    x.modular_sqrt(&modulus)
+}
+
+/// returns the number of primes smaller or equal to `&self`
+fn pi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.pi()
+}
+
+/// returns the number of integers that is coprime to `&self`
+fn euler_phi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.euler_phi()
+}
+
+/// returns the number of positive factors of `&self`
+fn tau<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.tau()
+}
+
+/// returns the sum of positive factors including trivial divisors of `&self`
+fn sigma<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.sigma()
+}
+
+/// returns the number of prime factors of `&self`
+fn omega<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.omega()
+}
+
+/// returns the Jacobi Symbol of the given integer.
+fn jacobi<T: Int>(x: T) -> Result<isize, ArithmeticError> {
+    x.jacobi()
+}
+
 macro_rules! impl_int_isize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError>{
-                // converting to absolute value may cause overflow
-                let mut x: $t = match self.checked_abs() {
-                    Some(n) => n,
-                    None => return Err(ArithmeticError{
-                        kind: ArithmeticErrorKind::OVERFLOW
-                    }),
-                };
-                let mut y: $t = match other.checked_abs() {
-                    Some(n) => n,
-                    None => return Err(ArithmeticError{
-                        kind: ArithmeticErrorKind::OVERFLOW
-                    }),
-                };
-
-                if x == 0 {
-                    return Ok(y);
-                }
-                if y == 0 {
-                    return Ok(x);
-                }
-
-                // Greatest power of two that divides both x and y.
-                let mut k = 0;
-                // Finding k by dividing x and y until one becomes an odd.
-                while ((x | y) & 1) == 0 {
-                    x >>= 1;
-                    y >>= 1;
-                    k += 1;
-                }
-
-                while y != 0 {
-                    // Removing factors of two in x and y.
-                    while (x & 1) == 0 {
-                        x >>= 1;
-                    }
-                    while (y & 1) == 0 {
-                        y >>= 1;
-                    }
-
-                    // From here x always smaller or equal to y.
-                    if x > y {
-                        mem::swap(&mut x, &mut y);
-                    }
-                    y -= x;
-                }
-
-                // Restore common factors of two.
-                Ok(x << k)
-            }
-
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 if *self == 0 {
                     return Ok(BezoutIdentity {
@@ -441,7 +440,7 @@ macro_rules! impl_int_isize {
                         }
                         false
                     };
- 
+
                     // all variables must be u128 to handle operation below
                     let mut h = n as u128;
                     h = ((h >> 16) ^ h) * 0x45d9f3b;
@@ -450,7 +449,7 @@ macro_rules! impl_int_isize {
 
                     is_sprp(n as i128, base[h as usize])
                 };
-                
+
                 // Miller-Rabin Algorithm for 64-bit integer
                 let _is_prime64 = |n: $t| {
                     let f = |n: i128, a: i128| {
@@ -519,11 +518,39 @@ macro_rules! impl_int_isize {
                     // works deterministically
                     Ok(_is_prime64(n))
                 } else {
-                    // probabilistic test for 128-bit size integers, 
+                    // probabilistic test for 128-bit size integers,
                     // probobility of returning true for pseudoprime
                     // is approximate to 0.25^20 * ln(n)
                     Ok(_is_prime128(n, 20))
-                } 
+                }
+            }
+
+            fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn pi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn euler_phi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn tau(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn sigma(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn omega(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn jacobi(&self) -> Result<isize, ArithmeticError> {
+                unimplemented!()
             }
         }
 
@@ -560,49 +587,6 @@ macro_rules! impl_int_isize {
 macro_rules! impl_int_usize {
     ($($t: ty, $test_mod: ident);+) => {$(
         impl Int for $t {
-            // GCD implmentation, using Binary Euclid Algorithm
-            fn igcd(&self, other: &Self) -> Result<Self, ArithmeticError> {
-                // It's not necessary to cast them into absoulute value,
-                // since this is implementation for usize values.
-                let mut x = *self;
-                let mut y = *other;
-
-                if x == 0 {
-                    return Ok(y);
-                }
-                if y == 0 {
-                    return Ok(x);
-                }
-
-                // Greatest power of two that divides both x and y.
-                let mut k = 0;
-                // Finding k by dividing x and y until one becomes an odd.
-                while ((x | y) & 1) == 0 {
-                    x >>= 1;
-                    y >>= 1;
-                    k += 1;
-                }
-
-                while y != 0 {
-                    // Removing factors of two in x and y.
-                    while (x & 1) == 0 {
-                        x >>= 1;
-                    }
-                    while (y & 1) == 0 {
-                        y >>= 1;
-                    }
-
-                    // From here x always smaller or equal to y.
-                    if x > y {
-                        mem::swap(&mut x, &mut y);
-                    }
-                    y -= x;
-                }
-
-                // Restore common factors of two.
-                Ok(x << k)
-            }
-
             // Extended Euclidean Algorithm implementation
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 // All arguments and variables must be signed values,
@@ -842,7 +826,7 @@ macro_rules! impl_int_usize {
                         }
                         false
                     };
- 
+
                     // all variables must be u128 to handle operation below
                     let mut h = n as u128;
                     h = ((h >> 16) ^ h) * 0x45d9f3b;
@@ -851,7 +835,7 @@ macro_rules! impl_int_usize {
 
                     is_sprp(n as u128, base[h as usize])
                 };
-                
+
                 // Miller-Rabin Algorithm for 64-bit integer
                 let _is_prime64 = |n: $t| {
                     let f = |n: u128, a: u128| {
@@ -926,6 +910,34 @@ macro_rules! impl_int_usize {
                     Ok(_is_prime128(n, 20))
                 }
             }
+
+            fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn pi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn euler_phi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn tau(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn sigma(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn omega(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn jacobi(&self) -> Result<isize, ArithmeticError> {
+                unimplemented!()
+            }
         }
 
         #[cfg(test)]
@@ -967,5 +979,3 @@ impl_int_usize!(usize, test_usize;
                 u32, test_u32;
                 u64, test_u64;
                 u128, test_u128);
-
-pub mod error;
