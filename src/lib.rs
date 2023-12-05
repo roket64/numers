@@ -5,22 +5,23 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+pub mod bigint;
 pub mod error;
 
+use num_integer::Integer;
+use num_integer::Roots;
 use rand::random;
-use num::integer::Integer;
-use num::integer::Roots;
 
+use std::fmt::{Display, Formatter};
 use std::mem;
 use std::vec::Vec;
-use std::fmt::{Display, Formatter};
 
 use error::{ArithmeticError, ArithmeticErrorKind};
 
 /// Structure represents the Bézout's Identity. \
 /// `a_coeff` represents `x` and `b_coeff` represents `y` from
 /// equation `ax + by = gcd(a, b)`.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BezoutIdentity<T: Int> {
     pub gcd: T,
     pub a_coeff: i64,
@@ -65,10 +66,10 @@ pub trait Int: Integer {
     fn modular_mul(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
     /// Calculates least nonnegative ineger from modular exponentiation between given integers
-    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful. 
+    /// and returns `Result<T, ArithmeticError>` wether the calculation was successful.
     /// Since we are interested in integers only, the result on negative exponent will return 0. \
     /// This implements the Binary Exponentiation Algorithm, hence the time complexity on
-    /// integer `x^y (mod n)` is `O(log2(y))`. 
+    /// integer `x^y (mod n)` is `O(log2(y))`.
     /// # Examples
     /// ```
     /// let n: i32 = 2;
@@ -95,6 +96,28 @@ pub trait Int: Integer {
     /// the computation was not successful, but still could panic
     /// on unexpected situations or undefined behaviors.
     fn is_prime(&self) -> Result<bool, ArithmeticError>;
+
+    /// returns square root of `&self` modulo p
+    /// modulus value must be a prime.
+    fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError>;
+
+    /// returns the number of primes smaller or equal to `&self`
+    fn pi(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of integers that is coprime to `&self`
+    fn euler_phi(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of positive factors of `&self`
+    fn tau(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the sum of positive factors including trivial divisors of `&self`
+    fn sigma(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the number of prime factors of `&self`
+    fn omega(&self) -> Result<usize, ArithmeticError>;
+
+    /// returns the Jacobi Symbol of the given integer.
+    fn jacobi(&self) -> Result<isize, ArithmeticError>;
 }
 
 /// Calculates Greatest Common Divior and Bézout's Identity
@@ -125,6 +148,40 @@ pub fn modular_pow<T: Int>(base: T, exponent: T, modulus: T) -> Result<T, Arithm
 /// Returns bool wether the given integer is prime number
 pub fn is_prime<T: Int>(x: T) -> Result<bool, ArithmeticError> {
     x.is_prime()
+}
+
+fn modular_sqrt<T: Int>(x: T, modulus: T) -> Result<T, ArithmeticError> {
+    x.modular_sqrt(&modulus)
+}
+
+/// returns the number of primes smaller or equal to `&self`
+fn pi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.pi()
+}
+
+/// returns the number of integers that is coprime to `&self`
+fn euler_phi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.euler_phi()
+}
+
+/// returns the number of positive factors of `&self`
+fn tau<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.tau()
+}
+
+/// returns the sum of positive factors including trivial divisors of `&self`
+fn sigma<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.sigma()
+}
+
+/// returns the number of prime factors of `&self`
+fn omega<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+    x.omega()
+}
+
+/// returns the Jacobi Symbol of the given integer.
+fn jacobi<T: Int>(x: T) -> Result<isize, ArithmeticError> {
+    x.jacobi()
 }
 
 macro_rules! impl_int_isize {
@@ -384,7 +441,7 @@ macro_rules! impl_int_isize {
                         }
                         false
                     };
- 
+
                     // all variables must be u128 to handle operation below
                     let mut h = n as u128;
                     h = ((h >> 16) ^ h) * 0x45d9f3b;
@@ -393,7 +450,7 @@ macro_rules! impl_int_isize {
 
                     is_sprp(n as i128, base[h as usize])
                 };
-                
+
                 // Miller-Rabin Algorithm for 64-bit integer
                 let _is_prime64 = |n: $t| {
                     let f = |n: i128, a: i128| {
@@ -462,11 +519,39 @@ macro_rules! impl_int_isize {
                     // works deterministically
                     Ok(_is_prime64(n))
                 } else {
-                    // probabilistic test for 128-bit size integers, 
+                    // probabilistic test for 128-bit size integers,
                     // probobility of returning true for pseudoprime
                     // is approximate to 0.25^20 * ln(n)
                     Ok(_is_prime128(n, 20))
-                } 
+                }
+            }
+
+            fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn pi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn euler_phi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn tau(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn sigma(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn omega(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn jacobi(&self) -> Result<isize, ArithmeticError> {
+                unimplemented!()
             }
         }
 
@@ -742,7 +827,7 @@ macro_rules! impl_int_usize {
                         }
                         false
                     };
- 
+
                     // all variables must be u128 to handle operation below
                     let mut h = n as u128;
                     h = ((h >> 16) ^ h) * 0x45d9f3b;
@@ -751,7 +836,7 @@ macro_rules! impl_int_usize {
 
                     is_sprp(n as u128, base[h as usize])
                 };
-                
+
                 // Miller-Rabin Algorithm for 64-bit integer
                 let _is_prime64 = |n: $t| {
                     let f = |n: u128, a: u128| {
@@ -825,6 +910,34 @@ macro_rules! impl_int_usize {
                     // is approximate to 0.25^20 * ln(n)
                     Ok(_is_prime128(n, 20))
                 }
+            }
+
+            fn modular_sqrt(&self, modulus: &Self) -> Result<Self, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn pi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn euler_phi(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn tau(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn sigma(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn omega(&self) -> Result<usize, ArithmeticError> {
+                unimplemented!()
+            }
+
+            fn jacobi(&self) -> Result<isize, ArithmeticError> {
+                unimplemented!()
             }
         }
 
