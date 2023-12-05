@@ -5,7 +5,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub mod bigint;
 pub mod error;
 
 use num_integer::Integer;
