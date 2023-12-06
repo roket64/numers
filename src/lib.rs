@@ -149,37 +149,37 @@ pub fn is_prime<T: Int>(x: T) -> Result<bool, ArithmeticError> {
     x.is_prime()
 }
 
-fn modular_sqrt<T: Int>(x: T, modulus: T) -> Result<T, ArithmeticError> {
+pub fn modular_sqrt<T: Int>(x: T, modulus: T) -> Result<T, ArithmeticError> {
     x.modular_sqrt(&modulus)
 }
 
 /// returns the number of primes smaller or equal to `&self`
-fn pi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+pub fn pi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
     x.pi()
 }
 
 /// returns the number of integers that is coprime to `&self`
-fn euler_phi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+pub fn euler_phi<T: Int>(x: T) -> Result<usize, ArithmeticError> {
     x.euler_phi()
 }
 
 /// returns the number of positive factors of `&self`
-fn tau<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+pub fn tau<T: Int>(x: T) -> Result<usize, ArithmeticError> {
     x.tau()
 }
 
 /// returns the sum of positive factors including trivial divisors of `&self`
-fn sigma<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+pub fn sigma<T: Int>(x: T) -> Result<usize, ArithmeticError> {
     x.sigma()
 }
 
 /// returns the number of prime factors of `&self`
-fn omega<T: Int>(x: T) -> Result<usize, ArithmeticError> {
+pub fn omega<T: Int>(x: T) -> Result<usize, ArithmeticError> {
     x.omega()
 }
 
 /// returns the Jacobi Symbol of the given integer.
-fn jacobi<T: Int>(x: T) -> Result<isize, ArithmeticError> {
+pub fn jacobi<T: Int>(x: T) -> Result<isize, ArithmeticError> {
     x.jacobi()
 }
 
