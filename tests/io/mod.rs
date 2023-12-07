@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
 
+mod primes;
+
 macro_rules! impl_read_vec {
     ($($t: ty, $id: ident);+) => {$(
         pub fn $id(path: &Path) -> io::Result<Vec<$t>> {
