@@ -8,7 +8,7 @@ use crate::BezoutIdentity;
 use crate::Int;
 
 macro_rules! impl_int_isize {
-    ($($t: ty, $test_mod: ident);+) => {$(
+    ($($t: ty),+) => {$(
         impl Int for $t {
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 if *self == 0 {
@@ -124,19 +124,6 @@ macro_rules! impl_int_isize {
                 y = y.rem_euclid(m);
                 // x and y are always positive from here
 
-                // if m.overflowing_sub(y).1
-                //     || x.overflowing_sub(m - y).1
-                //     || x.overflowing_add(y).1 {
-                //     Err(ArithmeticError {
-                //         kind: ArithmeticErrorKind::OVERFLOW
-                //     })
-                // } else {
-                //     if x >= m - y {
-                //         Ok(x - (m - y))
-                //     } else {
-                //         Ok(x + y)
-                //     }
-                // }
                 if x >= m - y {
                     Ok(x - (m - y))
                 } else {
@@ -327,38 +314,7 @@ macro_rules! impl_int_isize {
                 unimplemented!()
             }
         }
-
-        #[cfg(test)]
-        mod $test_mod {
-            #[test]
-            fn test_gcd() {
-                todo!()
-            }
-
-            #[test]
-            fn test_ext_gcd() {
-                todo!()
-            }
-
-            #[test]
-            fn test_factorize() {
-                todo!()
-            }
-
-            #[test]
-            fn test_modular_mul() {
-                todo!()
-            }
-
-            #[test]
-            fn test_modular_pow() {
-                todo!()
-            }
-        }
     )+};
 }
 
-impl_int_isize!(isize, test_isize;
-                i32, test_i32;
-                i64, test_i64;
-                i128, test_i128);
+impl_int_isize!(isize, i32, i64, i128);
