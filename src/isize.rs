@@ -8,7 +8,7 @@ use crate::BezoutIdentity;
 use crate::Int;
 
 macro_rules! impl_int_isize {
-    ($($t: ty, $test_mod: ident);+) => {$(
+    ($($t: ty),+) => {$(
         impl Int for $t {
             fn ext_gcd(&self, other: &Self) -> Result<BezoutIdentity<Self>, ArithmeticError> {
                 if *self == 0 {
@@ -124,18 +124,10 @@ macro_rules! impl_int_isize {
                 y = y.rem_euclid(m);
                 // x and y are always positive from here
 
-                if m.overflowing_sub(y).1
-                    || x.overflowing_sub(m - y).1
-                    || x.overflowing_add(y).1 {
-                    Err(ArithmeticError {
-                        kind: ArithmeticErrorKind::OVERFLOW
-                    })
+                if x >= m - y {
+                    Ok(x - (m - y))
                 } else {
-                    if x >= m - y {
-                        Ok(x - (m - y))
-                    } else {
-                        Ok(x + y)
-                    }
+                    Ok(x + y)
                 }
             }
 
@@ -169,7 +161,7 @@ macro_rules! impl_int_isize {
                 Ok(res as $t)
             }
 
-            fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
+            fn modular_pow(&self, exponent: &Self, modulus: &Self) -> Result<Self, ArithmeticError> {
                 // all arguments will be casted internally into i128 to avoid overflow
                 let mut res = match *modulus != 0 {
                     true => 1,
@@ -182,9 +174,9 @@ macro_rules! impl_int_isize {
 
                 let mut x = *self;
                 // negative exponent will return 0
-                let mut y = match *other < 0 {
+                let mut y = match *exponent < 0 {
                     true => return Ok(0),
-                    false => *other,
+                    false => *exponent,
                 };
                 let m = *modulus;
                 x %= m;
@@ -214,7 +206,7 @@ macro_rules! impl_int_isize {
                 }
 
                 // finding d, s that satisfies n = d * 2^s
-                let bin_expan = |n: i128| {
+                let bin_expan = |n: $t| {
                     let mut d = n;
                     let mut s = 0;
                     while (d & 1) == 0 {
@@ -224,80 +216,40 @@ macro_rules! impl_int_isize {
                     (d, s)
                 };
 
-                // Michal Forisek's Algorithm for 32-bit integer
-                let _is_prime32 = |n: $t| {
-                    let base: Vec<i128> = vec![
-                        0x3ce7, 0x7e2, 0xa6, 0x1d05, 0x1f80, 0x3ead, 0x2907, 0x112f, 0x79d, 0x50f, 0xad8, 0xe24,
-                        0x230, 0xc38, 0x145c, 0xa61, 0x8fc, 0x7e5, 0x122c, 0x5bf, 0x2478, 0xfb2, 0x95e, 0x4fee,
-                        0x2825, 0x1f5c, 0x8a5, 0x184b, 0x26c, 0xeb3, 0x12f4, 0x1394, 0xc71, 0x535, 0x1853, 0x14b2,
-                        0x432, 0x957, 0x13f9, 0x1b95, 0x323, 0x4f5, 0xf23, 0x1a6, 0x2ef, 0x244, 0x1279, 0x27ff,
-                        0x2ea, 0xb87, 0x22c, 0x89e, 0xec2, 0x1e1, 0x5f2, 0xd94, 0x1e1, 0x9b7, 0xcc2, 0x1601, 0x1e8,
-                        0xd2d, 0x1929, 0xd10, 0x11, 0x3b01, 0x5d2, 0x103a, 0x7f4, 0x75a, 0x715, 0x1d3, 0xceb,
-                        0x36da, 0x18e3, 0x292, 0x3ed, 0x387, 0x2e1, 0x75f, 0x1d17, 0x760, 0xb20, 0x6f8, 0x1d87,
-                        0xd48, 0x3b7, 0x3691, 0x10d0, 0xb1, 0x29, 0x4da3, 0xc26, 0x33a5, 0x2216, 0x23b, 0x1b83,
-                        0x1b1f, 0x4af, 0x160, 0x1923, 0xa5, 0x491, 0xcf3, 0x3d2, 0xe9, 0xbbb, 0xa02, 0xbb2, 0x295b,
-                        0x272e, 0x949, 0x76e, 0x14ea, 0x115f, 0x613, 0x107, 0x6993, 0x8eb, 0x131, 0x29d, 0x778,
-                        0x259, 0x182a, 0x1ad, 0x78a, 0x3a19, 0x6f8, 0x67d, 0x20c, 0xdf9, 0xec, 0x938, 0x1802,
-                        0xb22, 0xd955, 0x6d9, 0x1052, 0x2112, 0xde, 0xa13, 0xab7, 0x7ef, 0x8b2, 0x8e4, 0x176,
-                        0x854, 0x32d, 0x5cec, 0x64a, 0x1146, 0x1427, 0x6bd, 0xe0d, 0xd26, 0x3800, 0x243, 0xa5,
-                        0x55f, 0x2722, 0x3148, 0x2658, 0x55b, 0x218, 0x74b, 0x2a70, 0x359, 0x89e, 0x169c, 0x1b2,
-                        0x1f95, 0x44d2, 0x2d7, 0xe37, 0x63b, 0x1350, 0x851, 0x7ed, 0x2003, 0x2098, 0x1858, 0x23df,
-                        0x1fbe, 0x74e, 0xce0, 0x1d1f, 0x22f3, 0x61b9, 0x21d, 0x4aab, 0x170, 0x236, 0x162a, 0x19b,
-                        0x20a, 0x403, 0x2017, 0x802, 0x1990, 0x2741, 0x266, 0x306, 0x91d, 0xbbf, 0x8981, 0x1262,
-                        0x480, 0x6f9, 0x404, 0x604, 0xe9f, 0x1ed, 0x117a, 0x9d9, 0x68dd, 0x20a2, 0x360, 0x49e3,
-                        0x1559, 0x98f, 0x2a, 0x119f, 0x67c, 0xa6, 0x4e1, 0x1873, 0x9f9, 0x130, 0x110, 0x1c76, 0x49,
-                        0x199a, 0x383, 0xb00, 0x144d, 0x3412, 0x1b8e, 0xb02, 0xc7f, 0x32b, 0x39a, 0x15e, 0x1d5a,
-                        0x1164, 0xd79, 0xa67, 0x1264, 0x1a2, 0x655, 0x493, 0xd8f, 0x58, 0x2c51, 0x19c, 0x617, 0xc2,
-                    ];
-
-                    let is_sprp = |n: i128, a: i128| {
-                        let (d, s) = bin_expan(n - 1);
-                        let mut x = a.modular_pow(&d, &n).unwrap();
-                        if x == 1 {
+                let checker = |n: $t, a: $t| {
+                    if n == a {
+                        return true;
+                    }
+                    let (d, s) = bin_expan(n - 1);
+                    let mut x = a.modular_pow(&d, &n).unwrap();
+                    if x == 1 {
+                        return true;
+                    }
+                    for _ in 0..s {
+                        if x == n - 1 {
                             return true;
                         }
-                        for _ in 0..s {
-                            if x == n - 1 {
-                                return true;
-                            }
-                            x = x.modular_pow(&2, &n).unwrap();
+                        x = x.modular_pow(&2, &n).unwrap();
+                    }
+                    false
+                };
+
+                // Michal Forisek's Algorithm for 32-bit integer
+                let _is_prime32 = |n: $t| {
+                    let base32 = vec![2, 7, 61];
+                    for a in base32 {
+                        if !checker(n , a) {
+                            return false;
                         }
-                        false
-                    };
-
-                    // all variables must be u128 to handle operation below
-                    let mut h = n as u128;
-                    h = ((h >> 16) ^ h) * 0x45d9f3b;
-                    h = ((h >> 16) ^ h) * 0x45d9f3b;
-                    h = ((h >> 16) ^ h) & 255;
-
-                    is_sprp(n as i128, base[h as usize])
+                    }
+                    true
                 };
 
                 // Miller-Rabin Algorithm for 64-bit integer
                 let _is_prime64 = |n: $t| {
-                    let f = |n: i128, a: i128| {
-                        if n == a {
-                            return true;
-                        }
-                        let (d, s) = bin_expan(n - 1);
-                        let mut x = a.modular_pow(&d, &n).unwrap();
-                        if x == 1 {
-                            return true;
-                        }
-                        for _ in 0..s {
-                            if x == n - 1 {
-                                return true;
-                            }
-                            x = x.modular_pow(&2, &n).unwrap();
-                        }
-                        false
-                    };
-
-                    let base64: Vec<i128> = vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
-
+                    let base64 = vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
                     for a in base64 {
-                        if !f(n as i128, a) {
+                        if !checker(n, a) {
                             return false;
                         }
                     }
@@ -306,25 +258,10 @@ macro_rules! impl_int_isize {
 
                 // Iterative Miller-Rabin Algorithm for 128-bit integer
                 let _is_prime128 = |n: $t, iter: usize | {
-                    let f = |n: i128, a: i128| {
-                        let (d, s) = bin_expan(n - 1);
-                        let mut x = a.modular_pow(&d, &n).unwrap();
-                        if x == 1 {
-                            return true;
-                        }
-                        for _ in 0..s {
-                            if x == n - 1 {
-                                return true;
-                            }
-                            x = x.modular_pow(&2, &n).unwrap();
-                        }
-                        false
-                    };
-
                     for _ in 0..iter {
                         // pick an random integer between [2, n - 2]
-                        let a = 2 + random::<i128>().abs() % (n - 4) as i128;
-                        if !f(n as i128, a) {
+                        let a = 2 + random::<$t>().abs() % (n - 4);
+                        if !checker(n, a) {
                             return false;
                         }
                     }
@@ -377,38 +314,7 @@ macro_rules! impl_int_isize {
                 unimplemented!()
             }
         }
-
-        #[cfg(test)]
-        mod $test_mod {
-            #[test]
-            fn test_gcd() {
-                todo!()
-            }
-
-            #[test]
-            fn test_ext_gcd() {
-                todo!()
-            }
-
-            #[test]
-            fn test_factorize() {
-                todo!()
-            }
-
-            #[test]
-            fn test_modular_mul() {
-                todo!()
-            }
-
-            #[test]
-            fn test_modular_pow() {
-                todo!()
-            }
-        }
     )+};
 }
 
-impl_int_isize!(isize, test_isize;
-                i32, test_i32;
-                i64, test_i64;
-                i128, test_i128);
+impl_int_isize!(isize, i32, i64, i128);

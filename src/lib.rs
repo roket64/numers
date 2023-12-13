@@ -79,7 +79,7 @@ pub trait Int: Integer {
     /// let k: i32 = 4;
     /// assert_eq!(modular_pow(n, m, k).unwrap(), 0);
     /// ```
-    fn modular_pow(&self, other: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
+    fn modular_pow(&self, exponent: &Self, modulus: &Self) -> Result<Self, ArithmeticError>;
 
     /// Tests primality of the given intger and returns `bool` wether the integer is prime. \
     /// This implementation is a variant of Miller-Rabin Primality Test,
