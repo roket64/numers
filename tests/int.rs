@@ -42,9 +42,9 @@ where
 pub fn test_modular_fn<T, F>(sample: &[(T, T, T)], func: F)
 where
     T: Send + Sync,
-    F: Fn(&T, &T, &T) -> bool + Sync,
+    F: Fn(&T, &T, &T) + Send + Sync,
 {
     sample.into_par_iter().for_each(|(x, y, m)| {
-        assert!(func(x, y, m));
+        func(x, y, m);
     })
 }
