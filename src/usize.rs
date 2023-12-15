@@ -143,7 +143,7 @@ macro_rules! impl_int_usize {
                     if y & 1 == 1 {
                         res = res.modular_add(&x, &m)?;
                     }
-                    x = res.modular_add(&x, &m)?;
+                    x = x.modular_add(&x, &m)?;
                     y >>= 1;
                 }
 
