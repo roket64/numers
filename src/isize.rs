@@ -113,7 +113,7 @@ macro_rules! impl_int_isize {
                 let m = match *modulus != 0 {
                     true => *modulus,
                     false => {
-                        return Err(ArithmeticError{
+                        return Err(ArithmeticError {
                             kind: ArithmeticErrorKind::ZERO
                         })
                     },
@@ -124,10 +124,12 @@ macro_rules! impl_int_isize {
                 y = y.rem_euclid(m);
                 // x and y are always positive from here
 
-                if x >= m - y {
-                    Ok(x - (m - y))
+                if let Some(n) = m.checked_sub(y) {
+                    Ok(x - n)
                 } else {
-                    Ok(x + y)
+                    Err(ArithmeticError {
+                        kind: ArithmeticErrorKind::OVERFLOW
+                    })
                 }
             }
 
